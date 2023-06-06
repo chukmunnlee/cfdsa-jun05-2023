@@ -1,0 +1,5 @@
+{
+   "yaml.schemas": {
+      "kubernetes://schema/apps/v1%40deployment": "file:///opt/tmp/cfdsa-jun05-2023/day02/dov-bear.yaml"
+   }
+}

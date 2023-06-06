@@ -1,0 +1,64 @@
+--- 
+apiVersion: v1 
+kind: Namespace
+metadata:
+  name: dov-ns
+  labels:
+    app: dov-bear
+
+---
+apiVersion: apps/v1 
+kind: Deployment 
+metadata:
+  name: dov-deploy 
+  namespace: dov-ns
+  labels:
+    app: dov-bear
+
+spec: 
+  replicas: 4
+  selector:
+    matchLabels:
+      name: dov-po
+      app: dov-bear
+  template:
+    metadata:
+      name: dov-po
+      labels:
+        name: dov-po
+        app: dov-bear
+    spec:
+      containers:
+      - name: my-container
+        image: chukmunnlee/dov-bear:v2 
+        imagePullPolicy: IfNotPresent 
+        ports:
+        - containerPort: 3000
+        env:
+        - name: INSTANCE_NAME
+          value: dov-bear
+        - name: INSTANCE_HASH
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dov-svc
+  namespace: dov-ns
+  labels:
+    app: dov-bear
+spec:
+  type: LoadBalancer
+  selector: 
+    name: dov-po
+    app: dov-bear
+  ports:
+  - port: 8080
+    targetPort: 3000
