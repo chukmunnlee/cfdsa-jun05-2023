@@ -1,0 +1,102 @@
+---
+apiVersion: v1 
+kind: PersistentVolumeClaim 
+metadata:
+  name: code-pvc
+  namespace: code-ns
+  labels:
+    app: code
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: do-block-storage 
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-deploy
+  namespace: code-ns
+  labels:
+    app: code
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: code
+      name: code-po
+  template:
+    metadata:
+      name: code-po
+      labels:
+        app: code
+        name: code-po
+    spec:
+      volumes:
+      - name: code-vol
+        persistentVolumeClaim:
+          claimName: code-pvc
+      containers:
+      - name: code-container
+        image: linuxserver/code-server:amd64-4.13.0
+        imagePullPolicy: IfNotPresent
+        envFrom: 
+        - configMapRef:
+            name: code-cm
+        - secretRef:
+            name: code-secret
+        ports:
+        - name: code-port
+          containerPort: 8443
+        volumeMounts:
+        - name: code-vol
+          mountPath: /config/workspace
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-svc
+  namespace: code-ns
+  labels:
+    app: code
+spec:
+  type: ClusterIP
+  selector:
+    app: code
+    name: code-po
+  ports:
+  - name: code-port 
+    port: 8443 
+    targetPort: code-port
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: code-ing
+  namespace: code-ns
+  labels:
+    app: code
+
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: code-159.89.211.156.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service: 
+            name: code-svc
+            port:
+              name: code-port
+  tls:
+  - hosts: 
+    - code-159.89.211.156.nip.io
+    secretName: code-tls
+
