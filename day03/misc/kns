@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if test $# -le 0; then
+	echo 'missing arguments'
+	exit 1
+fi
+
+kubectl -n $*
